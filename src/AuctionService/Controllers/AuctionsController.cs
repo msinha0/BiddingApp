@@ -7,6 +7,8 @@ using AuctionService.DTOs;
 using AuctionService.Entities;
 using AutoMapper;
 using AutoMapper.QueryableExtensions;
+using Contracts;
+using MassTransit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,8 +20,10 @@ namespace AuctionService.Controllers
     {
         private readonly AuctionDbContext _context;
         private readonly IMapper _mapper;
-        public AuctionsController(AuctionDbContext context, IMapper mapper)
+        private readonly IPublishEndpoint _publishEndpoint;
+        public AuctionsController(AuctionDbContext context, IMapper mapper, IPublishEndpoint publishEndpoint)
         {
+            _publishEndpoint = publishEndpoint;
             _mapper = mapper;
             _context = context;
             
@@ -62,12 +66,17 @@ namespace AuctionService.Controllers
 
             _context.Auctions.Add(auction);
 
+            var newAuction = _mapper.Map<AuctionDto>(auction);
+
+            //Publishes the message to all subscribed consumers for the Queue - RabbitMQ, MassTransit
+            await _publishEndpoint.Publish(_mapper.Map<AuctionCreated>(newAuction));
+
             var result = await _context.SaveChangesAsync() > 0;
 
             if(!result) return BadRequest("Could not save changes to the DB");
 
             return CreatedAtAction(nameof(GetAuctionById), 
-                    new {auction.Id}, _mapper.Map<AuctionDto>(auction));
+                    new {auction.Id}, newAuction);
         }
 
         [HttpPut("{id}")]
