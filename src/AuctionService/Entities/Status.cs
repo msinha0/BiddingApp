@@ -9,6 +9,6 @@ namespace AuctionService.Entities
     {
         Live,
         Finished,
-        REserveNotMet
+        ReserveNotMet
     }
 }

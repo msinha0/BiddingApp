@@ -9,7 +9,7 @@ namespace AuctionService.Entities
     {
         public Guid Id { get; set; }
 
-        public int ReservePrice { get; set; }
+        public int ReservePrice { get; set; } = 0;
 
         public string Seller { get; set; }
 
